@@ -18,6 +18,12 @@ app.use(
   })
 );
 
+//app .use to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 app.use(bodyParser.json());
 
 // User routes
@@ -30,6 +36,11 @@ app.get("/api/users", authenticateToken, userController.getAllUsers);
 app.get("/api/roles", authenticateToken, userController.getRoles);
 app.get("/api/permissions", authenticateToken, userController.getPermissions);
 app.get("/api/agencies", authenticateToken, userController.getAgencies);
+app.get(
+  "/api/current-user-permissions",
+  authenticateToken,
+  userController.getCurrentUserPermissions
+);
 
 connection()
   .then(() => {

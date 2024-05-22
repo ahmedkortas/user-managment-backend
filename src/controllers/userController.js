@@ -107,11 +107,12 @@ exports.login = async (req, res) => {
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "24h",
     });
 
     res.send({ token });
   } catch (error) {
+    console.log(error);
     res.status(500).send(error);
   }
 };
@@ -247,6 +248,44 @@ exports.getAgencies = async (req, res) => {
   try {
     const [agencies] = await pool.query(`SELECT * FROM agency`);
     res.send(agencies);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const getRolesAndPermissionsUserId = async (userId) => {
+  const [roles] = await pool.query(
+    `
+    SELECT r.roleName 
+    FROM role r
+    INNER JOIN user_roles ur ON r.roleId = ur.roleId
+    WHERE ur.userId = ?
+  `,
+    [userId]
+  );
+
+  const [permissions] = await pool.query(
+    `
+    SELECT p.permissionName 
+    FROM permission p
+    INNER JOIN user_permissions up ON p.permissionId = up.permissionId
+    WHERE up.userId = ?
+  `,
+    [userId]
+  );
+
+  return {
+    roles: roles.map((role) => role.roleName),
+    permissions: permissions.map((permission) => permission.permissionName),
+  };
+};
+
+// Get current user permissions
+exports.getCurrentUserPermissions = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { roles, permissions } = await getRolesAndPermissionsUserId(userId);
+    res.send({ roles, permissions });
   } catch (error) {
     res.status(500).send(error);
   }
